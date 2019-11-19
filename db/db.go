@@ -22,6 +22,10 @@ func Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return db.Query(query, args)
 }
 
+func Prepare(query string) (*sql.Stmt, error) {
+	return db.Prepare(query)
+}
+
 func BeginTx() (*sql.Tx, error) {
 	return db.Begin()
 }

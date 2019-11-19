@@ -103,6 +103,9 @@ func (g *Generator) Generate() {
 			case "select":
 				g.Select(m, f)
 				break
+			case "delete":
+				g.Delete(m, f)
+				break
 			}
 		}
 
@@ -126,10 +129,13 @@ func (g *Generator) Select(m Mapper, f Func) {
 	}
 	g.Printf(")")
 	if len(f.Results) == 1 {
-		if f.Results[0].IsArray {
+		switch f.Results[0].Type {
+		case "array":
 			g.Printf("[]")
-		} else {
+			break
+		case "star":
 			g.Printf("*")
+			break
 		}
 		g.Printf(f.Results[0].Name)
 	}
@@ -142,20 +148,20 @@ func (g *Generator) Select(m Mapper, f Func) {
 		}
 	}
 	g.Printf(")\n")
+	g.Printf(`if err != nil {
+								log.Println(err.Error())
+								return nil
+								}
+								`)
 	g.Printf(`defer rows.Close()`)
 	g.Printf("\n")
 
-	if f.Results[0].IsArray {
+	if f.Results[0].Type == "array" {
 		g.Printf(`results:=make([]%s,0)`, f.Results[0].Name)
 	}
-
 	g.Printf("\n")
-	g.Printf(`if err != nil {
-								log.Println(err.Error())
-								return results
-								}
-								`)
-	if f.Results[0].IsArray {
+
+	if f.Results[0].Type == "array" {
 		g.Printf("for ")
 	} else {
 		g.Printf("if ")
@@ -175,17 +181,54 @@ func (g *Generator) Select(m Mapper, f Func) {
 
 	g.Printf(")")
 	g.Printf("\n")
-	if f.Results[0].IsArray {
+	if f.Results[0].Type == "array" {
 		g.Printf(`results = append(results, temp)`)
 	} else {
 		g.Printf("return &temp")
 	}
 	g.Printf("\n}\n")
-	if f.Results[0].IsArray {
+	if f.Results[0].Type == "array" {
 		g.Printf("return results")
 	} else {
 		g.Printf("return nil")
 	}
+	g.Printf("}")
+	g.Printf("\n\n")
+}
+
+func (g *Generator) Delete(m Mapper, f Func) {
+	g.Printf("func (this *%s) %s(", m.Name, f.Name)
+	if f.Param.Name != "" {
+		g.Printf("param *%s", f.Param.Name)
+	}
+	g.Printf(")")
+	if len(f.Results) == 1 {
+		g.Printf(f.Results[0].Name)
+	}
+	g.Printf("{\n")
+	g.Printf(`stmt, err := db.Prepare("%s")
+					if err != nil {
+						return err
+					}
+					defer stmt.Close()
+					`, f.Tag)
+	g.Printf("res, err := stmt.Exec(")
+	if f.Param.Name != "" {
+		for i, p := range f.Sql.Params {
+			g.Printf("param.%s", p)
+			if i != len(f.Sql.Params)-1 {
+				g.Printf(",")
+			}
+		}
+	}
+	g.Printf(")\n")
+
+	g.Printf(`if err != nil {
+						log.Println(err.Error())
+						return err
+					}
+					return nil
+					`)
 	g.Printf("}")
 	g.Printf("\n\n")
 }

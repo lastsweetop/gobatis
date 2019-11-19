@@ -36,8 +36,8 @@ type Param struct {
 }
 
 type Result struct {
-	Name    string
-	IsArray bool
+	Name string
+	Type string
 }
 
 // File holds a single parsed file and associated data.

@@ -14,12 +14,26 @@ func Parser(sql string) *SqlSynx {
 		offset: 0,
 	}
 	action := sh.GetAction()
-	fields := sh.GetFileds()
-	params := sh.GetParams()
-	log.Println(params)
-	return &SqlSynx{
-		Action: action,
-		Fields: fields,
-		Params: params,
+	switch action {
+	case "select":
+		fields := sh.GetFileds()
+		params := sh.GetParams()
+		log.Println(params)
+		return &SqlSynx{
+			Action: action,
+			Fields: fields,
+			Params: params,
+		}
+		break
+	case "delete":
+		params := sh.GetParams()
+		log.Println(params)
+		return &SqlSynx{
+			Action: action,
+			Fields: nil,
+			Params: params,
+		}
+		break
 	}
+	return nil
 }

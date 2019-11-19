@@ -50,19 +50,28 @@ func (f *File) genDecl(node ast.Node) bool {
 				result := make([]Result, 0)
 				for _, r := range ft.Results.List {
 					a, isArray := r.Type.(*ast.ArrayType)
-					s, isStar := r.Type.(*ast.StarExpr)
 					if isArray {
 						elt := a.Elt.(*ast.SelectorExpr)
 						result = append(result, Result{
-							Name:    elt.X.(*ast.Ident).Name + "." + elt.Sel.Name,
-							IsArray: true,
+							Name: elt.X.(*ast.Ident).Name + "." + elt.Sel.Name,
+							Type: "array",
 						})
+						continue
 					}
+					s, isStar := r.Type.(*ast.StarExpr)
 					if isStar {
 						x := s.X.(*ast.SelectorExpr)
 						result = append(result, Result{
-							Name:    x.X.(*ast.Ident).Name + "." + x.Sel.Name,
-							IsArray: false,
+							Name: x.X.(*ast.Ident).Name + "." + x.Sel.Name,
+							Type: "star",
+						})
+						continue
+					}
+					i, isIdent := r.Type.(*ast.Ident)
+					if isIdent {
+						result = append(result, Result{
+							Name: i.Name,
+							Type: "ident",
 						})
 					}
 				}
