@@ -6,7 +6,7 @@ Generate dao code from tag of structure.
 
 # install
 
-`go install github.com/lastsweetop/gobatis/tree/master`
+`go install github.com/lastsweetop/gobatis`
 
 # generate
 
