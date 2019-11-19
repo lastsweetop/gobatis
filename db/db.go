@@ -18,6 +18,10 @@ func init() {
 	log.Println("db init")
 }
 
+func Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return db.Query(query, args)
+}
+
 func BeginTx() (*sql.Tx, error) {
 	return db.Begin()
 }
