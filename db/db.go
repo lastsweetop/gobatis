@@ -1,4 +1,4 @@
-package mapper
+package db
 
 import (
 	"database/sql"
@@ -17,8 +17,6 @@ func init() {
 	}
 	log.Println("db init")
 }
-
-
 
 func BeginTx() (*sql.Tx, error) {
 	return db.Begin()

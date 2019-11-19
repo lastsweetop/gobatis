@@ -36,9 +36,14 @@ type Mapper struct {
 type Func struct {
 	Name    string
 	Results []Result
+	Param   Param
 	Tag     string
 	Sql     *sqlparser.SqlSynx
 }
+type Param struct {
+	Name string
+}
+
 type Result struct {
 	Name    string
 	IsArray bool
@@ -147,36 +152,50 @@ func (g *Generator) Generate(typeName string) {
 		g.Printf("}\n\n")
 
 		for _, f := range m.Func {
-			g.Printf("func (this *%s) %s() ", m.Name, f.Name)
+			g.Printf("func (this *%s) %s(", m.Name, f.Name)
+			log.Println(f.Param)
+			if f.Param.Name != "" {
+				g.Printf("param *%s", f.Param.Name)
+			}
+			g.Printf(")")
 			if len(f.Results) == 1 {
 				if f.Results[0].IsArray {
 					g.Printf("[]")
+				} else {
+					g.Printf("*")
 				}
 				g.Printf(f.Results[0].Name)
 			}
 			g.Printf("{\n")
-			g.Printf(`rows, err := db.Query("%s")`, f.Tag)
-			g.Printf("\n")
+			g.Printf(`rows, err := db.Query("%s"`, f.Tag)
+
+			if f.Param.Name != "" {
+				for _, p := range f.Sql.Params {
+					g.Printf(",param.%s", p)
+				}
+			}
+			g.Printf(")\n")
 			g.Printf(`defer rows.Close()`)
 			g.Printf("\n")
-			g.Printf(`results:=make(`)
 
 			if f.Results[0].IsArray {
-				g.Printf("[]")
+				g.Printf(`results:=make([]%s,0)`, f.Results[0].Name)
 			}
-			g.Printf(f.Results[0].Name)
-			g.Printf(",0)")
 
 			g.Printf("\n")
 			g.Printf(`if err != nil {
 								log.Println(err.Error())
 								return results
-								}`)
-			g.Printf("\n")
-			g.Printf(`for rows.Next() {
+								}
+								`)
+			if f.Results[0].IsArray {
+				g.Printf("for ")
+			} else {
+				g.Printf("if ")
+			}
+			g.Printf(`rows.Next() {
 								temp:=%s{}
 								`, f.Results[0].Name)
-			g.Printf("\n")
 			g.Printf("rows.Scan(")
 
 			for i, s := range f.Sql.Fields {
@@ -189,12 +208,21 @@ func (g *Generator) Generate(typeName string) {
 
 			g.Printf(")")
 			g.Printf("\n")
-			g.Printf(`results = append(results, temp)
-							}`)
-			g.Printf("\n")
-			g.Printf("return results")
+			if f.Results[0].IsArray {
+				g.Printf(`results = append(results, temp)`)
+			} else {
+				g.Printf("return &temp")
+			}
+			g.Printf("\n}\n")
+			if f.Results[0].IsArray {
+				g.Printf("return results")
+			} else {
+				g.Printf("return nil")
+			}
 			g.Printf("}")
+			g.Printf("\n\n")
 		}
+
 	}
 
 	src := g.Format()
@@ -229,22 +257,41 @@ func (f *File) genDecl(node ast.Node) bool {
 				Name: tspec.Name.Name + "Mapper",
 				Func: make([]Func, 0),
 			}
-
+			var param Param
 			sspec := tspec.Type.(*ast.StructType)
 			for _, field := range sspec.Fields.List {
 				ft := field.Type.(*ast.FuncType)
+
+				for _, p := range ft.Params.List {
+					s, isStar := p.Type.(*ast.StarExpr)
+					if isStar {
+						x := s.X.(*ast.SelectorExpr)
+						param = Param{
+							Name: x.X.(*ast.Ident).Name + "." + x.Sel.Name,
+						}
+					}
+				}
+
 				result := make([]Result, 0)
 				for _, r := range ft.Results.List {
-					a, ok := r.Type.(*ast.ArrayType)
-					if ok {
+					a, isArray := r.Type.(*ast.ArrayType)
+					s, isStar := r.Type.(*ast.StarExpr)
+					if isArray {
 						elt := a.Elt.(*ast.SelectorExpr)
 						result = append(result, Result{
 							Name:    elt.X.(*ast.Ident).Name + "." + elt.Sel.Name,
 							IsArray: true,
 						})
 					}
+					if isStar {
+						x := s.X.(*ast.SelectorExpr)
+						result = append(result, Result{
+							Name:    x.X.(*ast.Ident).Name + "." + x.Sel.Name,
+							IsArray: false,
+						})
+					}
 				}
-				tag := reflect.StructTag(field.Tag.Value[1:len(field.Tag.Value)-1])
+				tag := reflect.StructTag(field.Tag.Value[1 : len(field.Tag.Value)-1])
 				sql := sqlparser.Parser(tag.Get("batis")[1 : len(tag.Get("batis"))-1])
 
 				v.Func = append(v.Func, Func{
@@ -252,6 +299,7 @@ func (f *File) genDecl(node ast.Node) bool {
 					Results: result,
 					Tag:     tag.Get("batis"),
 					Sql:     sql,
+					Param:   param,
 				})
 			}
 
