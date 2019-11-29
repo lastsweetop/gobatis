@@ -10,4 +10,5 @@ type User struct {
 }
 
 type Device struct {
+
 }
