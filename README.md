@@ -4,6 +4,8 @@ Golang version of mybatis.
 
 Generate dao code from tag of structure.
 
+So you don't have to worry about the performance issues caused by orm reflection, but you can still get rid of the boring dao layer code
+
 # install
 
 `go install github.com/lastsweetop/gobatis`
