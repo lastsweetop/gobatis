@@ -27,6 +27,18 @@ func (this *SqlHelper) GetFileds() []string {
 	return fields
 }
 
+func (this *SqlHelper) GetInsertFileds() []string {
+	fields := make([]string, 0)
+	temp1 := strings.Index(this.sql[this.offset:], "(")
+	temp2 := strings.Index(this.sql[this.offset:], ")")
+	fieldstr := this.sql[this.offset+temp1+1 : this.offset+temp2]
+	fieldstrs := strings.Split(fieldstr, ",")
+	for _, s := range fieldstrs {
+		fields = append(fields, utils.UpperFirstWord(strings.TrimSpace(s)))
+	}
+	return fields
+}
+
 func (this *SqlHelper) GetParams() []string {
 	params := make([]string, 0)
 	temp := strings.Index(this.sql, "where ") + 6

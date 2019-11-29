@@ -34,6 +34,14 @@ func Parser(sql string) *SqlSynx {
 			Params: params,
 		}
 		break
+	case "insert":
+		fields := sh.GetInsertFileds()
+		return &SqlSynx{
+			Action: action,
+			Fields: fields,
+			Params: nil,
+		}
+		break
 	}
 	return nil
 }
