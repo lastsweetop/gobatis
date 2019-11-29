@@ -2,6 +2,7 @@ package sqlparser
 
 import (
 	"gobatis/utils"
+	"log"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ func (this *SqlHelper) GetAction() string {
 func (this *SqlHelper) GetFileds() []string {
 	fields := make([]string, 0)
 
-	temp := strings.Index(this.sql[this.offset:], "from")
+	temp := strings.Index(this.sql[this.offset:], " from ")
 	fieldstr := this.sql[this.offset : this.offset+temp]
 	fieldstrs := strings.Split(fieldstr, ",")
 	for _, s := range fieldstrs {
@@ -39,9 +40,23 @@ func (this *SqlHelper) GetInsertFileds() []string {
 	return fields
 }
 
+func (this *SqlHelper) GetUpdateFields() []string {
+	fields := make([]string, 0)
+	temp1 := strings.Index(this.sql[this.offset:], " set ") + 5
+	temp2 := strings.Index(this.sql[this.offset:], " where ")
+	log.Println(temp1, temp2)
+	fieldstr := this.sql[this.offset+temp1 : this.offset+temp2]
+	fieldstrs := strings.Split(fieldstr, ",")
+	for _, s := range fieldstrs {
+		s = strings.Split(s, "=")[0]
+		fields = append(fields, utils.UpperFirstWord(strings.TrimSpace(s)))
+	}
+	return fields
+}
+
 func (this *SqlHelper) GetParams() []string {
 	params := make([]string, 0)
-	temp := strings.Index(this.sql, "where ") + 6
+	temp := strings.Index(this.sql, " where ") + 7
 	if temp == 5 {
 		return params
 	}

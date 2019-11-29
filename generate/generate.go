@@ -108,6 +108,10 @@ func (g *Generator) Generate() {
 				break
 			case "insert":
 				g.Insert(m, f)
+				break
+			case "update":
+				g.Update(m, f)
+				break
 			}
 		}
 
@@ -255,10 +259,50 @@ func (g *Generator) Insert(m Mapper, f Func) {
 	g.Printf("res, err := stmt.Exec(")
 	for i, p := range f.Sql.Fields {
 		g.Printf("param.%s", p)
-		if i != len(f.Sql.Params)-1 {
+		if i != len(f.Sql.Fields)-1 {
 			g.Printf(",")
 		}
 	}
+	g.Printf(")\n")
+
+	g.Printf(`if err != nil {
+						log.Println(err.Error())
+						return err
+					}
+					return nil
+					`)
+	g.Printf("}")
+	g.Printf("\n\n")
+}
+
+func (g *Generator) Update(m Mapper, f Func) {
+	g.Printf("func (this *%s) %s(", m.Name, f.Name)
+	log.Println(f.Sql.Fields)
+	if f.Param.Name != "" {
+		g.Printf("param *%s", f.Param.Name)
+	}
+	g.Printf(")")
+	if len(f.Results) == 1 {
+		g.Printf(f.Results[0].Name)
+	}
+	g.Printf("{\n")
+	g.Printf(`stmt, err := db.Prepare("%s")
+					if err != nil {
+						return err
+					}
+					defer stmt.Close()
+					`, f.Tag)
+	g.Printf("res, err := stmt.Exec(")
+	for i, p := range f.Sql.Fields {
+		g.Printf("param.%s", p)
+		if i != len(f.Sql.Fields)-1 {
+			g.Printf(",")
+		}
+	}
+	for _, p := range f.Sql.Params {
+		g.Printf(",param.%s", p)
+	}
+
 	g.Printf(")\n")
 
 	g.Printf(`if err != nil {

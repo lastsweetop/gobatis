@@ -24,7 +24,6 @@ func Parser(sql string) *SqlSynx {
 			Fields: fields,
 			Params: params,
 		}
-		break
 	case "delete":
 		params := sh.GetParams()
 		log.Println(params)
@@ -33,7 +32,6 @@ func Parser(sql string) *SqlSynx {
 			Fields: nil,
 			Params: params,
 		}
-		break
 	case "insert":
 		fields := sh.GetInsertFileds()
 		return &SqlSynx{
@@ -41,7 +39,14 @@ func Parser(sql string) *SqlSynx {
 			Fields: fields,
 			Params: nil,
 		}
-		break
+	case "update":
+		fields := sh.GetUpdateFields()
+		params := sh.GetParams()
+		return &SqlSynx{
+			Action: action,
+			Fields: fields,
+			Params: params,
+		}
 	}
 	return nil
 }

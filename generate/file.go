@@ -76,12 +76,12 @@ func (f *File) genDecl(node ast.Node) bool {
 					}
 				}
 				tag := reflect.StructTag(field.Tag.Value[1 : len(field.Tag.Value)-1])
-				sql := sqlparser.Parser(tag.Get("batis")[:len(tag.Get("batis"))])
+				sql := sqlparser.Parser(tag.Get("gobatis")[:len(tag.Get("gobatis"))])
 
 				v.Func = append(v.Func, Func{
 					Name:    field.Names[0].Name,
 					Results: result,
-					Tag:     tag.Get("batis"),
+					Tag:     tag.Get("gobatis"),
 					Sql:     sql,
 					Param:   param,
 				})
